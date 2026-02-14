@@ -11,6 +11,22 @@ export class Logger {
     };
     this.level = 'info';
     this.timezone = config.timezone || 'UTC';
+    
+    // ANSI colors
+    this.colors = {
+      reset: '\x1b[0m',
+      red: '\x1b[31m',
+      green: '\x1b[32m',
+      yellow: '\x1b[33m',
+      blue: '\x1b[34m',
+      magenta: '\x1b[35m',
+      cyan: '\x1b[36m',
+      gray: '\x1b[90m'
+    };
+  }
+
+  colorize(text, color) {
+    return `${this.colors[color]}${text}${this.colors.reset}`;
   }
 
   log(level, message, ...args) {
@@ -23,12 +39,40 @@ export class Logger {
         minute: '2-digit',
         second: '2-digit'
       });
-      const prefix = `[${timestamp}]`;
+      
+      // Color based on level
+      let color = 'reset';
+      let prefixColor = 'gray';
+      
+      switch (level) {
+        case 'error':
+          color = 'red';
+          prefixColor = 'red';
+          break;
+        case 'warn':
+          color = 'yellow';
+          prefixColor = 'yellow';
+          break;
+        case 'success':
+          color = 'green';
+          prefixColor = 'green';
+          break;
+        case 'debug':
+          color = 'gray';
+          prefixColor = 'gray';
+          break;
+        default:
+          color = 'cyan';
+          prefixColor = 'gray';
+      }
+      
+      const coloredPrefix = this.colorize(`[${timestamp}]`, prefixColor);
+      const coloredMessage = this.colorize(message, color);
       
       if (args.length > 0) {
-        console.log(prefix, message, ...args);
+        console.log(coloredPrefix, coloredMessage, ...args);
       } else {
-        console.log(prefix, message);
+        console.log(coloredPrefix, coloredMessage);
       }
     }
   }
