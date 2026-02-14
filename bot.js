@@ -202,8 +202,9 @@ class QuestBot {
         const endTime = new Date(m.endTime);
         const timeToClose = endTime - now;
         
-        // Skip if market already closed or closing within 1 minute
-        if (timeToClose <= 60000) {
+        // Skip if market already closed (status check is more reliable than time)
+        // Markets should be ACTIVE to consider
+        if (m.status !== 'ACTIVE') {
           continue;
         }
 
