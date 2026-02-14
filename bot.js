@@ -202,8 +202,8 @@ class QuestBot {
         const endTime = new Date(m.endTime);
         const timeToClose = endTime - now;
         
-        // Skip if market closes too soon (can't place bets)
-        if (timeToClose < windowMs) {
+        // Skip if market already closed or closing within 1 minute
+        if (timeToClose <= 60000) {
           continue;
         }
 
