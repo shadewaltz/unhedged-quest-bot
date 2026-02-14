@@ -1,0 +1,19 @@
+[Unit]
+Description=Unhedged Quest Bot
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/bots/unhedged-quest-bot
+Environment="NODE_ENV=production"
+EnvironmentFile=/home/ubuntu/bots/unhedged-quest-bot/.env
+ExecStart=/usr/bin/node bot.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=unhedged-bot
+
+[Install]
+WantedBy=multi-user.target
