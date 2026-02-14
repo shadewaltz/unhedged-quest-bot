@@ -1,15 +1,12 @@
 {
   "name": "unhedged-quest-bot",
   "version": "1.0.0",
-  "description": "Unhedged prediction market quest grinding bot - bets 5 min before close following majority + price delta",
+  "description": "Unhedged prediction market quest grinding bot",
   "main": "bot.js",
   "type": "module",
   "scripts": {
-    "start": "node bot.js",
-    "dry-run": "node bot.js --dry-run"
-  },
-  "dependencies": {
-    "node-cron": "^3.0.3",
-    "dotenv": "^16.4.5"
+    "start": "bun bot.js",
+    "dev": "bun --watch bot.js",
+    "build": "bun build --compile --outfile=unhedged-bot bot.js"
   }
 }

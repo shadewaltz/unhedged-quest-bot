@@ -4,6 +4,9 @@ node_modules/
 # Environment variables
 .env
 
+# Compiled executable
+unhedged-bot
+
 # Logs
 *.log
 
@@ -19,7 +22,11 @@ Thumbs.db
 dist/
 build/
 *.exe
-*.bin
+
+# Lock files
+bun.lock
+package-lock.json
+yarn.lock
 
 # Temporary files
 *.tmp

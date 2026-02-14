@@ -1,8 +1,3 @@
-import dotenv from 'dotenv';
-
-// Load .env file
-dotenv.config();
-
 export const config = {
   // API Configuration
   apiBaseUrl: 'https://api.unhedged.gg',
