@@ -109,7 +109,7 @@ class QuestBot {
       this.currentMarket = await this.findBestMarket();
 
       if (!this.currentMarket) {
-        this.logger.info('No suitable market found. Waiting 60s...');
+        this.logger.info(colorize('No suitable market found. Waiting 60s...', 'yellow'));
         await this.sleep(60000);
         return;
       }
@@ -277,7 +277,6 @@ class QuestBot {
       }
 
       // No favorable market found - return null to trigger wait and retry
-      this.logger.info('No suitable market found. Waiting...');
       return null;
 
     } catch (err) {
