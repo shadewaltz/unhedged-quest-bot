@@ -78,17 +78,19 @@ class QuestBot {
   }
 
   async cycle() {
-    // Step 1: Find the best 1-hour binary market
-    this.logger.info('Finding best 1-hour binary market...');
-    const market = await this.findBestMarket();
+    // Step 1: Find the best 1-hour binary market (if we don't have one)
+    if (!this.currentMarket) {
+      this.logger.info('Finding best 1-hour binary market...');
+      this.currentMarket = await this.findBestMarket();
 
-    if (!market) {
-      this.logger.info(colorize('No 1-hour market available. Waiting 60s...', 'yellow'));
-      await this.sleep(60000);
-      return;
+      if (!this.currentMarket) {
+        this.logger.info(colorize('No 1-hour market available. Waiting 60s...', 'yellow'));
+        await this.sleep(60000);
+        return;
+      }
     }
 
-    this.currentMarket = market;
+    const market = this.currentMarket;
 
     this.logger.info(`Market: ${market.question}`);
     
