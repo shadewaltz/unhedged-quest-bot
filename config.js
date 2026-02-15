@@ -1,11 +1,40 @@
-export const config = {
-  // API Configuration
-  apiBaseUrl: 'https://api.unhedged.gg',
-  apiKey: process.env.UNHEDGED_API_KEY,
+// Parse CLI arguments for API keys
+function parseCliArgs() {
+  const args = process.argv.slice(2);
+  const parsed = {
+    unhedgedKeyName: 'UNHEDGED_API_KEY',  // default
+    cmcKeyName: 'CMC_API_KEY',            // default
+    dryRun: false
+  };
   
-  // CoinMarketCap API Key (optional - for price data)
-  // Get one at: https://coinmarketcap.com/api/
-  cmcApiKey: process.env.CMC_API_KEY || null,
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '-u' || arg === '--unhedged') {
+      // Next arg is the env var name
+      parsed.unhedgedKeyName = args[i + 1];
+      i++; // skip next
+    } else if (arg === '-c' || arg === '--cmc') {
+      parsed.cmcKeyName = args[i + 1];
+      i++; // skip next
+    } else if (arg === '--dry-run') {
+      parsed.dryRun = true;
+    }
+  }
+  
+  return parsed;
+}
+
+const cliArgs = parseCliArgs();
+
+export const config = {
+  // API Configuration - use CLI-specified env vars or defaults
+  apiBaseUrl: 'https://api.unhedged.gg',
+  apiKey: process.env[cliArgs.unhedgedKeyName],
+  cmcApiKey: process.env[cliArgs.cmcKeyName],
+  
+  // CLI flags
+  dryRun: cliArgs.dryRun,
   
   // Timezone for displaying times (default: UTC)
   // Examples: 'UTC', 'Asia/Jakarta', 'America/New_York'

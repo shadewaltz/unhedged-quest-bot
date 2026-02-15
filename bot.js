@@ -12,7 +12,7 @@ class QuestBot {
     this.strategy = new Strategy(config);
     this.logger = new Logger();
     this.isRunning = false;
-    this.dryRun = process.argv.includes('--dry-run');
+    this.dryRun = config.dryRun;
     this.betsInWindow = [];
     this.currentMarket = null;
     this.totalBetsPlaced = 0; // Track total bets across all markets
