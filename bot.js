@@ -38,19 +38,28 @@ class QuestBot {
 
   async checkPendingBets() {
     try {
-      const bets = await this.api.listBets({ status: 'PENDING', limit: 1 });
-      if (bets.bets && bets.bets.length > 0) {
-        const pendingBet = bets.bets[0];
-        const marketId = pendingBet.marketId;
+      this.logger.info('Checking for pending bets...');
+      // Check for both PENDING and CONFIRMED bets (waiting for resolution)
+      const pendingBets = await this.api.listBets({ status: 'PENDING', limit: 10 });
+      const confirmedBets = await this.api.listBets({ status: 'CONFIRMED', limit: 10 });
+      
+      const allBets = [...(pendingBets.bets || []), ...(confirmedBets.bets || [])];
+      this.logger.info(`Found ${allBets.length} active bets (pending + confirmed)`);
+      
+      if (allBets.length > 0) {
+        const bet = allBets[0];
+        this.logger.info(`Active bet marketId: ${bet.marketId}, status: ${bet.status}`);
         
         // Get market details
-        const market = await this.api.getMarket(marketId);
+        const market = await this.api.getMarket(bet.marketId);
         this.currentMarket = market.market || market;
         
         this.logger.info(colorize(`Resuming tracking: ${this.currentMarket.question}`, 'green'));
+      } else {
+        this.logger.info('No active bets found');
       }
     } catch (err) {
-      // No pending bets or error, continue normally
+      this.logger.error('Error checking pending bets:', err.message);
     }
   }
 
