@@ -436,7 +436,7 @@ class QuestBot {
       this.logger.info(`[DRY RUN] Would bet ${decision.amount} CC on ${outcomeLabel}`);
       this.totalBetsPlaced++;
       if (this.maxTotalBets) {
-        this.logger.info(`Progress: Progress: ${this.totalBetsPlaced}/${this.maxTotalBets} bets (dry run)`);
+        this.logger.info(`Progress: ${this.totalBetsPlaced}/${this.maxTotalBets} bets (dry run)`);
       }
       return;
     }
@@ -456,7 +456,7 @@ class QuestBot {
       this.totalBetsPlaced++;
       
       if (this.maxTotalBets) {
-        this.logger.info(`Progress: Progress: ${this.totalBetsPlaced}/${this.maxTotalBets} bets`);
+        this.logger.info(`Progress: ${this.totalBetsPlaced}/${this.maxTotalBets} bets`);
       }
 
     } catch (err) {
