@@ -379,15 +379,15 @@ class QuestBot {
         continue;
       }
 
-      // Get fresh market stats
+      // Get fresh market stats (inside loop for fresh data)
       let stats, currentPrice;
       try {
         stats = await this.api.getMarketStats(market.id);
         
-        // Get current price for the correct asset
+        // Get current price for the correct asset (only log once per market)
         const asset = this.parseAssetFromQuestion(market.question);
         if (!asset) {
-          this.logger.info('Cannot fetch price for this asset type, using majority only');
+          // Canton Coin or unsupported asset - use majority only, no spam logging
           currentPrice = null;
         } else {
           currentPrice = await this.getCurrentPrice(asset);
