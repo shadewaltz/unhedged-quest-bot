@@ -1,5 +1,21 @@
 import { config } from './config.js';
 
+const colors = {
+  reset: '\x1b[0m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  gray: '\x1b[90m',
+  white: '\x1b[37m'
+};
+
+export function colorize(text, color) {
+  return `${colors[color]}${text}${colors.reset}`;
+}
+
 export class Logger {
   constructor() {
     this.levels = {
@@ -11,22 +27,6 @@ export class Logger {
     };
     this.level = 'info';
     this.timezone = config.timezone || 'UTC';
-    
-    // ANSI colors
-    this.colors = {
-      reset: '\x1b[0m',
-      red: '\x1b[31m',
-      green: '\x1b[32m',
-      yellow: '\x1b[33m',
-      blue: '\x1b[34m',
-      magenta: '\x1b[35m',
-      cyan: '\x1b[36m',
-      gray: '\x1b[90m'
-    };
-  }
-
-  colorize(text, color) {
-    return `${this.colors[color]}${text}${this.colors.reset}`;
   }
 
   log(level, message, ...args) {
@@ -39,40 +39,12 @@ export class Logger {
         minute: '2-digit',
         second: '2-digit'
       });
-      
-      // Color based on level
-      let color = 'reset';
-      let prefixColor = 'gray';
-      
-      switch (level) {
-        case 'error':
-          color = 'red';
-          prefixColor = 'red';
-          break;
-        case 'warn':
-          color = 'yellow';
-          prefixColor = 'yellow';
-          break;
-        case 'success':
-          color = 'green';
-          prefixColor = 'green';
-          break;
-        case 'debug':
-          color = 'gray';
-          prefixColor = 'gray';
-          break;
-        default:
-          color = 'cyan';
-          prefixColor = 'gray';
-      }
-      
-      const coloredPrefix = this.colorize(`[${timestamp}]`, prefixColor);
-      const coloredMessage = this.colorize(message, color);
+      const prefix = `[${timestamp}]`;
       
       if (args.length > 0) {
-        console.log(coloredPrefix, coloredMessage, ...args);
+        console.log(prefix, message, ...args);
       } else {
-        console.log(coloredPrefix, coloredMessage);
+        console.log(prefix, message);
       }
     }
   }

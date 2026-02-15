@@ -34,7 +34,7 @@ export const config = {
     minPoolSize: 3000,  // Minimum 500 CC in pool
 
     // Price uncertainty threshold: skip if price within X% of target
-    priceUncertaintyThreshold: 0.0015,  // 0.3%
+    priceUncertaintyThreshold: 0.001,  // 0.3%
 
     // Cooldown between bets (ms)
     // Rate limit: 30 requests/min = 1 request every 2s minimum

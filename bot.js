@@ -1,7 +1,7 @@
 import { config } from './config.js';
 import { UnhedgedAPI } from './api.js';
 import { Strategy } from './strategy.js';
-import { Logger } from './logger.js';
+import { Logger, colorize } from './logger.js';
 
 class QuestBot {
   constructor() {
@@ -25,9 +25,9 @@ class QuestBot {
     if (this.maxTotalBets) {
       this.logger.info(`Max bets limit: ${this.maxTotalBets}`);
     }
-    this.logger.info(`Price threshold: ${(config.betting.priceUncertaintyThreshold * 100).toFixed(2)}%`);
-    this.logger.info(`Majority threshold: ${(config.betting.majorityThreshold * 100).toFixed(0)}%`);
-    this.logger.info(`Min pool size: ${config.betting.minPoolSize} CC`);
+    this.logger.info(`Price threshold: ${colorize((config.betting.priceUncertaintyThreshold * 100).toFixed(2) + '%', 'cyan')}`);
+    this.logger.info(`Majority threshold: ${colorize((config.betting.majorityThreshold * 100).toFixed(0) + '%', 'cyan')}`);
+    this.logger.info(`Min pool size: ${colorize(config.betting.minPoolSize + ' CC', 'cyan')}`);
     
     // Show achievement progress
     await this.showAchievementProgress();
@@ -46,15 +46,17 @@ class QuestBot {
       const currentStep = achievement.steps.find(s => s.stepNumber === quest.completedStep + 1);
       
       this.logger.info(`Achievement: ${achievement.name}: Step ${quest.completedStep}/5 complete`);
-      this.logger.info(`Progress: Progress: ${quest.currentBets} bets / ${quest.currentVolume} CC volume`);
+      const pctBets = Math.round((quest.currentBets / 750) * 100);
+      const pctVol = Math.round((parseFloat(quest.currentVolume) / 2000) * 100);
+      this.logger.info(`Progress: ${quest.currentBets} bets ${colorize('(' + pctBets + '%)', 'cyan')} / ${quest.currentVolume} CC ${colorize('(' + pctVol + '%)', 'cyan')}`);
       
       if (currentStep) {
         const betsNeeded = currentStep.requiredBets - quest.currentBets;
         const volumeNeeded = parseFloat(currentStep.requiredVolume) - parseFloat(quest.currentVolume);
-        this.logger.info(`Current: Step ${currentStep.stepNumber} — need ${Math.max(0, betsNeeded)} more bets, ${Math.max(0, volumeNeeded.toFixed(2))} more CC`);
-        this.logger.info(`Reward: ${currentStep.rewardAmount} CC`);
+        this.logger.info(`Current: Step ${currentStep.stepNumber} — need ${colorize(Math.max(0, betsNeeded) + ' more bets', 'yellow')}, ${colorize(Math.max(0, volumeNeeded.toFixed(2)) + ' more CC', 'yellow')}`);
+        this.logger.info(`Reward: ${colorize(currentStep.rewardAmount + ' CC', 'green')}`);
       } else {
-        this.logger.info(`Quest complete! Total reward: 680 CC`);
+        this.logger.info(colorize('Quest complete! Total reward: 680 CC', 'green'));
       }
     } catch (err) {
       // Silently fail if achievements endpoint doesn't work
@@ -119,7 +121,8 @@ class QuestBot {
       if (targetPrice && currentPrice) {
         const delta = ((currentPrice - targetPrice) / targetPrice * 100).toFixed(2);
         const sign = delta >= 0 ? '+' : '';
-        this.logger.info(`Target: $${targetPrice.toLocaleString()} | Current: $${currentPrice.toLocaleString()} (${sign}${delta}%)`);
+        const deltaColor = parseFloat(delta) >= 0 ? 'green' : 'red';
+        this.logger.info(`Target: ${colorize('$' + targetPrice.toLocaleString(), 'yellow')} | Current: ${colorize('$' + currentPrice.toLocaleString(), 'green')} (${colorize(sign + delta + '%', deltaColor)})`);
       }
     }
 
@@ -128,7 +131,7 @@ class QuestBot {
     const availableBalance = parseFloat(balance.balance?.available || '0');
     const minBet = parseFloat(market.minimumBet || '0.1');
 
-    this.logger.info(`Balance: ${availableBalance} CC available`);
+    this.logger.info(`Balance: ${colorize(availableBalance.toFixed(2) + ' CC', 'green')}`);
 
     if (availableBalance < minBet) {
       this.logger.warn('Low balance! Waiting for bets to resolve...');
@@ -223,7 +226,7 @@ class QuestBot {
           
           if (majorityOk && poolOk) {
             this.logger.info(`Found favorable market: ${m.question}`);
-            this.logger.info(`Majority: ${(maxProb * 100).toFixed(0)}% | Pool: ${totalPool.toFixed(0)} CC`);
+            this.logger.info(`Majority: ${colorize((maxProb * 100).toFixed(0) + '%', 'green')} | Pool: ${colorize(totalPool.toFixed(0) + ' CC', 'green')}`);
             return m;
           }
         } catch (err) {
@@ -292,7 +295,7 @@ class QuestBot {
         const reasons = [];
         if (!majorityOk) reasons.push(`${(maxProb * 100).toFixed(0)}% majority (need ${(config.betting.majorityThreshold * 100).toFixed(0)}%)`);
         if (!poolOk) reasons.push(`${totalPool.toFixed(0)} CC pool (need ${config.betting.minPoolSize})`);
-        this.logger.info(`Market unfavorable: ${reasons.join(', ')} — will skip all bets`);
+        this.logger.info(`Market unfavorable: ${colorize(reasons.join(', '), 'yellow')} — will skip all bets`);
       }
     } catch (err) {
       // Silently continue if can't check
@@ -324,7 +327,7 @@ class QuestBot {
 
       // Check balance again
       if (availableBalance < minBet) {
-        this.logger.warn('Out of balance during spam!');
+        this.logger.warn(colorize('Out of balance during spam!', 'red'));
         break;
       }
 
@@ -409,7 +412,7 @@ class QuestBot {
         idempotencyKey
       });
 
-      this.logger.success(`Bet placed: ${decision.amount} CC on ${outcomeLabel}`);
+      this.logger.success(colorize(`Bet placed: ${decision.amount} CC on ${outcomeLabel}`, 'green'));
       this.totalBetsPlaced++;
       
       if (this.maxTotalBets) {
@@ -417,7 +420,7 @@ class QuestBot {
       }
 
     } catch (err) {
-      this.logger.error('Bet failed:', err.message);
+      this.logger.error(colorize('Bet failed:', 'red'), err.message);
     }
   }
 
