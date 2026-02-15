@@ -1,9 +1,10 @@
-// Parse CLI arguments for API keys
+// Parse CLI arguments for API keys and config file
 function parseCliArgs() {
   const args = process.argv.slice(2);
   const parsed = {
-    unhedgedKeyName: 'UNHEDGED_API_KEY',  // default
-    cmcKeyName: 'CMC_API_KEY',            // default
+    unhedgedKeyName: 'UNHEDGED_API_KEY',
+    cmcKeyName: 'CMC_API_KEY',
+    configFile: null,
     dryRun: false
   };
   
@@ -11,12 +12,14 @@ function parseCliArgs() {
     const arg = args[i];
     
     if (arg === '-u' || arg === '--unhedged') {
-      // Next arg is the env var name
       parsed.unhedgedKeyName = args[i + 1];
-      i++; // skip next
+      i++;
     } else if (arg === '-c' || arg === '--cmc') {
       parsed.cmcKeyName = args[i + 1];
-      i++; // skip next
+      i++;
+    } else if (arg === '-f' || arg === '--config') {
+      parsed.configFile = args[i + 1];
+      i++;
     } else if (arg === '--dry-run') {
       parsed.dryRun = true;
     }
@@ -27,74 +30,78 @@ function parseCliArgs() {
 
 const cliArgs = parseCliArgs();
 
-export const config = {
-  // API Configuration - use CLI-specified env vars or defaults
+// Default configuration
+const defaultConfig = {
   apiBaseUrl: 'https://api.unhedged.gg',
-  apiKey: process.env[cliArgs.unhedgedKeyName],
-  cmcApiKey: process.env[cliArgs.cmcKeyName],
-  
-  // CLI flags
-  dryRun: cliArgs.dryRun,
-  
-  // Timezone for displaying times (default: UTC)
-  // Examples: 'UTC', 'Asia/Jakarta', 'America/New_York'
   timezone: 'Asia/Jakarta',
   
-  // Betting Configuration
   betting: {
-    // Time window: start betting X minutes before close
     windowMinutes: 10,
-
-    // Bet sizing
-    minBet: 0.1,        // Minimum bet amount
-    maxBet: 5,          // Maximum bet amount
-    targetBetCount: 750,  // Quest requirement
-    targetVolume: 2000,   // Quest requirement
-
-    // Strategy weights (0-1)
-    majorityWeight: 0.6,      // Weight to give majority bet side
-    priceDeltaWeight: 0.4,    // Weight to give price delta analysis
-
-    // Majority threshold (0-1): only bet when majority >= this percentage
-    majorityThreshold: 0.80,  // 80%
-
-    // Minimum pool size to consider a market (in CC)
-    // Skip markets with smaller pools (low liquidity = risky)
-    minPoolSize: 3000,  // Minimum 500 CC in pool
-
-    // Price uncertainty threshold: skip if price within X% of target
-    priceUncertaintyThreshold: 0.001,  // 0.3%
-
-    // Cooldown between bets (ms)
-    // Rate limit: 30 requests/min = 1 request every 2s minimum
-    // Using 2500ms to have some buffer
+    minBet: 0.1,
+    maxBet: 5,
+    targetBetCount: 750,
+    targetVolume: 2000,
+    majorityWeight: 0.6,
+    priceDeltaWeight: 0.4,
+    majorityThreshold: 0.80,
+    minPoolSize: 3000,
+    priceUncertaintyThreshold: 0.001,
     cooldownMs: 2500,
-    
-    // Maximum total bets to place (null = unlimited)
-    // Set to a number to stop after placing that many bets
     maxTotalBets: null
   },
 
-  // Rate Limiting
   rateLimit: {
     maxRequestsPerMinute: 30,
-    bufferRequests: 5,     // Keep this many requests in reserve
-    retryAfterMs: 2000     // Wait this long after hitting limit
+    bufferRequests: 5,
+    retryAfterMs: 2000
   },
 
-  // Server Error Retry
   serverErrorRetry: {
-    enabled: true,         // Auto-retry on 502/503/504 errors
-    maxRetries: 3,         // How many retries
-    waitMs: 5000           // Wait time between retries (ms)
+    enabled: true,
+    maxRetries: 3,
+    waitMs: 5000
   },
   
-  // Logging
   logLevel: 'info'
+};
+
+// Load custom config if specified
+let fileConfig = {};
+if (cliArgs.configFile) {
+  try {
+    const file = await Bun.file(cliArgs.configFile).json();
+    fileConfig = file;
+    console.log(`Loaded config from: ${cliArgs.configFile}`);
+  } catch (err) {
+    console.error(`Failed to load config file: ${err.message}`);
+    process.exit(1);
+  }
+}
+
+// Deep merge function
+function deepMerge(target, source) {
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      target[key] = deepMerge(target[key] || {}, source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+// Merge: default <- file config <- CLI overrides
+const mergedConfig = deepMerge(deepMerge({}, defaultConfig), fileConfig);
+
+export const config = {
+  ...mergedConfig,
+  apiKey: process.env[cliArgs.unhedgedKeyName],
+  cmcApiKey: process.env[cliArgs.cmcKeyName],
+  dryRun: cliArgs.dryRun
 };
 
 // Validate config
 if (!config.apiKey) {
-  console.error('❌ UNHEDGED_API_KEY environment variable required');
+  console.error('UNHEDGED_API_KEY environment variable required');
   process.exit(1);
 }
