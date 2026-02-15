@@ -92,7 +92,7 @@ class QuestBot {
 
     const market = this.currentMarket;
 
-    this.logger.info(`Market: ${market.question}`);
+    this.logger.info('Market: ' + market.question);
     
     // Format time in configured timezone
     const closeTimeStr = new Date(market.endTime).toLocaleString('en-US', {
@@ -124,7 +124,7 @@ class QuestBot {
         const delta = ((currentPrice - targetPrice) / targetPrice * 100).toFixed(2);
         const sign = delta >= 0 ? '+' : '';
         const deltaColor = parseFloat(delta) >= 0 ? 'green' : 'red';
-        this.logger.info(`Target: ${colorize('$' + targetPrice.toLocaleString(), 'yellow')} | Current: ${colorize('$' + currentPrice.toLocaleString(), 'green')} (${colorize(sign + delta + '%', deltaColor)})`);
+        this.logger.info(`Target: ${colorize('$' + targetPrice.toFixed(2), 'yellow')} | Current: ${colorize('$' + currentPrice.toFixed(2), 'green')} (${colorize(sign + delta + '%', deltaColor)})`);
       }
     }
 
@@ -435,7 +435,7 @@ class QuestBot {
   }
 
   async waitForBetsToResolve() {
-    this.logger.info('Waiting for bets to resolve (checking every 30s)...');
+    this.logger.info('Waiting for bets to resolve (checking every 60s)...');
 
     while (this.isRunning) {
       // Check if we have any pending bets at all
@@ -452,7 +452,7 @@ class QuestBot {
         this.logger.error('Error checking bets:', err.message);
       }
 
-      await this.sleep(30000);
+      await this.sleep(60000);
     }
   }
 
