@@ -191,7 +191,6 @@ class QuestBot {
       }
 
       if (oneHourMarkets.length === 0) {
-        this.logger.info('No 1-hour binary markets found');
         return null;
       }
 
