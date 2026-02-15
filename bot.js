@@ -29,8 +29,29 @@ class QuestBot {
     this.logger.info(`Majority threshold: ${colorize((config.betting.majorityThreshold * 100).toFixed(0) + '%', 'cyan')}`);
     this.logger.info(`Min pool size: ${colorize(config.betting.minPoolSize + ' CC', 'cyan')}`);
     
+    // Check for existing pending bets and resume tracking
+    await this.checkPendingBets();
+    
     // Show achievement progress
     await this.showAchievementProgress();
+  }
+
+  async checkPendingBets() {
+    try {
+      const bets = await this.api.listBets({ status: 'PENDING', limit: 1 });
+      if (bets.bets && bets.bets.length > 0) {
+        const pendingBet = bets.bets[0];
+        const marketId = pendingBet.marketId;
+        
+        // Get market details
+        const market = await this.api.getMarket(marketId);
+        this.currentMarket = market.market || market;
+        
+        this.logger.info(colorize(`Resuming tracking: ${this.currentMarket.question}`, 'green'));
+      }
+    } catch (err) {
+      // No pending bets or error, continue normally
+    }
   }
 
   async showAchievementProgress() {
