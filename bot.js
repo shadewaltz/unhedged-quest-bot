@@ -51,14 +51,6 @@ class QuestBot {
         const market = await this.api.getMarket(bet.marketId);
         this.currentMarket = market.market || market;
         
-        // Check if this is a supported asset (has price API)
-        const asset = this.parseAssetFromQuestion(this.currentMarket.question);
-        if (!asset) {
-          // Skip unsupported assets like Canton Coin - don't resume tracking
-          this.currentMarket = null;
-          return;
-        }
-        
         this.logger.info(colorize(`Resuming: ${this.currentMarket.question}`, 'green'));
       }
     } catch (err) {
@@ -517,7 +509,7 @@ class QuestBot {
     if (lower.includes('bitcoin') || lower.includes('btc')) return 'BTC';
     if (lower.includes('ethereum') || lower.includes('eth')) return 'ETH';
     if (lower.includes('solana') || lower.includes('sol')) return 'SOL';
-    if (lower.includes('canton coin') || lower.includes('cc')) return null; // No price API
+    if (lower.includes('canton coin')) return 'CC'; // Now supported!
     
     // Default to BTC if can't determine
     return 'BTC';
