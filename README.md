@@ -1,80 +1,151 @@
 # Unhedged Quest Bot
 
-Automated betting bot for Unhedged prediction markets. Designed to complete the quest milestones (750 bets, 2000 CC volume) while minimizing losses through smart outcome selection.
+Automated betting bot for Unhedged prediction markets. Designed to complete quest milestones while minimizing losses through smart outcome selection.
 
-## How It Works
+## Features
 
-1. **Monitors** a target market (auto-selects largest pool or specify manually)
-2. **Waits** until 5 minutes before market close
-3. **Analyzes** market data:
-   - Majority bet side (crowd wisdom)
-   - Current vs target price delta (for price markets)
-4. **Places** strategic bets to hit quest targets
+- **Multi-account support** — Run multiple accounts with different configs
+- **Custom per-account configs** — Different strategies per account
+- **Proxy support** — Use different IPs for each account
+- **Auto market selection** — Finds best 1-hour binary markets
+- **Smart betting strategy** — Follows majority + price analysis
+- **Achievement tracking** — Tracks quest progress automatically
 
-## Setup
+## Quick Start
 
 ```bash
-cd bots/unhedged-quest-bot
+# Clone repo
+git clone https://github.com/shadewaltz/unhedged-quest-bot.git
+cd unhedged-quest-bot
 
-# Install dependencies
-npm install
+# Create .env file
+cp .env.example .env
+# Edit .env with your API keys
 
-# Set environment variables
-export UNHEDGED_API_KEY="your_api_key_here"
-export TARGET_MARKET_ID="optional_specific_market_id"
+# Run
+bun run bot.js
 
-# Dry run first (simulates without placing bets)
-npm run dry-run
-
-# Run live
-npm start
+# Or compile to executable
+bun run build
+./unhedged-bot
 ```
 
-## Configuration
+## Multi-Account Setup
 
-Edit `config.js` to tune:
+### 1. Create account-specific env vars
+
+```bash
+# .env
+UNHEDGED_API_KEY=default_key
+UNHEDGED_ACCOUNT1=key1
+UNHEDGED_ACCOUNT2=key2
+UNHEDGED_ACCOUNT3=key3
+CMC_API_KEY=your_cmc_key
+```
+
+### 2. Create account-specific configs
+
+```bash
+mkdir config
+
+# config/account1.json - aggressive
+{
+  "betting": {
+    "majorityThreshold": 0.70,
+    "minPoolSize": 2000,
+    "maxTotalBets": 50
+  }
+}
+
+# config/account2.json - conservative
+{
+  "betting": {
+    "majorityThreshold": 0.90,
+    "minPoolSize": 5000,
+    "maxTotalBets": 20
+  }
+}
+```
+
+### 3. Run multiple accounts (different terminals)
+
+```bash
+# Terminal 1
+bun run bot.js -u UNHEDGED_ACCOUNT1 -f config/account1.json
+
+# Terminal 2
+bun run bot.js -u UNHEDGED_ACCOUNT2 -f config/account2.json
+
+# Terminal 3 (with custom CMC key if needed)
+bun run bot.js -u UNHEDGED_ACCOUNT3 -c CMC_ACCOUNT3 -f config/account3.json
+```
+
+## CLI Flags
+
+| Flag | Description |
+|------|-------------|
+| `-u, --unhedged` | Env var name for Unhedged API key |
+| `-c, --cmc` | Env var name for CMC API key |
+| `-f, --config` | Path to custom config JSON |
+| `--dry-run` | Simulate without placing bets |
+
+## Proxy Support
+
+Bun doesn't have native proxy support in `fetch()`. Use one of these methods:
+
+### Option 1: Environment variables (system-wide)
+```bash
+export HTTP_PROXY=http://proxy:port
+export HTTPS_PROXY=http://proxy:port
+bun run bot.js
+```
+
+### Option 2: Proxychains
+```bash
+proxychains bun run bot.js
+```
+
+### Option 3: Config file (for documentation)
+Add to your config JSON:
+```json
+{
+  "proxy": "http://user:pass@proxy:port"
+}
+```
+
+## Configuration Options
+
+See `config.example.json` for all options:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `windowMinutes` | 5 | Start betting X min before close |
-| `minBet` | 0.1 | Minimum bet size |
-| `maxBet` | 5 | Maximum bet size |
-| `majorityWeight` | 0.6 | Weight given to crowd wisdom |
-| `priceDeltaWeight` | 0.4 | Weight given to price analysis |
-| `cooldownMs` | 5000 | Delay between bets |
+| `timezone` | Asia/Jakarta | Display timezone |
+| `betting.windowMinutes` | 10 | Start betting X min before close |
+| `betting.majorityThreshold` | 0.80 | Min majority % to bet |
+| `betting.minPoolSize` | 3000 | Min pool size in CC |
+| `betting.priceUncertaintyThreshold` | 0.001 | Skip if price within X% |
+| `betting.cooldownMs` | 2500 | Delay between bets |
+| `betting.maxTotalBets` | null | Stop after N bets |
 
 ## Strategy
 
-The bot uses a weighted scoring system:
+The bot combines two signals:
+1. **Majority** (60% weight) — crowd wisdom
+2. **Price delta** (40% weight) — current vs target price
 
-```
-Final Score = (Majority_Side × 0.6) + (Price_Signal × 0.4)
-```
-
-**Price Analysis** (for BTC/ETH markets):
-- Parses target price from market question
-- Compares current price from Binance API
-- Adjusts confidence based on how far current price is from target
-
-Example:
-- Market: "Will BTC be above $98,000 at 8 PM?"
-- Current: $97,500 (0.51% below target)
-- Signal: Slightly bearish → favor "No"
-
-## Quest Progress Tracking
-
-The bot tracks your progress toward:
-- Step 1: 5 bets, 5 CC ✓
-- Step 2: 50 bets, 100 CC (in progress)
-- Step 3: 200 bets, 500 CC
-- Step 4: 500 bets, 1000 CC  
-- Step 5: 750 bets, 2000 CC
-
-**Total reward: 680 CC**
+Only bets when:
+- Majority >= threshold (default 80%)
+- Pool size >= min (default 3000 CC)
+- Price delta > uncertainty threshold
 
 ## Safety Features
 
-- Idempotency keys prevent duplicate bets
-- Cooldown between bets to avoid rate limits
-- Dry run mode for testing
-- Auto-stops when quest complete
+- Idempotency keys prevent duplicates
+- Rate limit protection (30 req/min)
+- Auto-retry on server errors
+- Resume tracking on restart
+- Balance checks before betting
+
+## Disclaimer
+
+This bot is for educational purposes. Use at your own risk. Gambling involves financial risk.

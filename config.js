@@ -62,6 +62,10 @@ const defaultConfig = {
     waitMs: 5000
   },
   
+  // Proxy configuration (optional)
+  // Format: "http://proxy:port" or "http://user:pass@proxy:port"
+  proxy: null,
+  
   logLevel: 'info'
 };
 

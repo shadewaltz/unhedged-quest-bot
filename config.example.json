@@ -1,5 +1,6 @@
 {
   "timezone": "Asia/Jakarta",
+  "proxy": null,
   "betting": {
     "windowMinutes": 10,
     "majorityThreshold": 0.90,
