@@ -51,6 +51,14 @@ class QuestBot {
         const market = await this.api.getMarket(bet.marketId);
         this.currentMarket = market.market || market;
         
+        // Check if this is a supported asset (has price API)
+        const asset = this.parseAssetFromQuestion(this.currentMarket.question);
+        if (!asset) {
+          // Skip unsupported assets like Canton Coin - don't resume tracking
+          this.currentMarket = null;
+          return;
+        }
+        
         this.logger.info(colorize(`Resuming: ${this.currentMarket.question}`, 'green'));
       }
     } catch (err) {
