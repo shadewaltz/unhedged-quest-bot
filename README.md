@@ -70,14 +70,14 @@ mkdir config
 ### 3. Run multiple accounts (different terminals)
 
 ```bash
-# Terminal 1
-bun run bot.js -u UNHEDGED_ACCOUNT1 -f config/account1.json
+# Terminal 1 - Account 1 with proxy 1
+bun run bot.js -u UNHEDGED_ACCOUNT1 -p PROXY_1 -f config/account1.json
 
-# Terminal 2
-bun run bot.js -u UNHEDGED_ACCOUNT2 -f config/account2.json
+# Terminal 2 - Account 2 with proxy 2
+bun run bot.js -u UNHEDGED_ACCOUNT2 -p PROXY_2 -f config/account2.json
 
-# Terminal 3 (with custom CMC key if needed)
-bun run bot.js -u UNHEDGED_ACCOUNT3 -c CMC_ACCOUNT3 -f config/account3.json
+# Terminal 3 - Account 3 with proxy 3
+bun run bot.js -u UNHEDGED_ACCOUNT3 -p PROXY_3 -f config/account3.json
 ```
 
 ## CLI Flags
@@ -86,6 +86,7 @@ bun run bot.js -u UNHEDGED_ACCOUNT3 -c CMC_ACCOUNT3 -f config/account3.json
 |------|-------------|
 | `-u, --unhedged` | Env var name for Unhedged API key |
 | `-c, --cmc` | Env var name for CMC API key |
+| `-p, --proxy` | Env var name for proxy URL |
 | `-f, --config` | Path to custom config JSON |
 | `--dry-run` | Simulate without placing bets |
 

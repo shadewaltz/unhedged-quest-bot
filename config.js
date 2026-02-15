@@ -4,6 +4,7 @@ function parseCliArgs() {
   const parsed = {
     unhedgedKeyName: 'UNHEDGED_API_KEY',
     cmcKeyName: 'CMC_API_KEY',
+    proxyKeyName: null,  // null = no proxy
     configFile: null,
     dryRun: false
   };
@@ -16,6 +17,9 @@ function parseCliArgs() {
       i++;
     } else if (arg === '-c' || arg === '--cmc') {
       parsed.cmcKeyName = args[i + 1];
+      i++;
+    } else if (arg === '-p' || arg === '--proxy') {
+      parsed.proxyKeyName = args[i + 1];
       i++;
     } else if (arg === '-f' || arg === '--config') {
       parsed.configFile = args[i + 1];
@@ -34,6 +38,8 @@ const cliArgs = parseCliArgs();
 const defaultConfig = {
   apiBaseUrl: 'https://api.unhedged.gg',
   timezone: 'Asia/Jakarta',
+  
+  proxy: process.env[cliArgs.proxyKeyName] || null,
   
   betting: {
     windowMinutes: 10,
@@ -61,10 +67,6 @@ const defaultConfig = {
     maxRetries: 3,
     waitMs: 5000
   },
-  
-  // Proxy configuration (optional)
-  // Format: "http://proxy:port" or "http://user:pass@proxy:port"
-  proxy: null,
   
   logLevel: 'info'
 };
