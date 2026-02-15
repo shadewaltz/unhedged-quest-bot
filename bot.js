@@ -110,6 +110,21 @@ class QuestBot {
     const endTime = new Date(market.endTime);
     const timeToClose = endTime - now;
     
+    // If market already closed and we have pending bets, just wait quietly
+    if (timeToClose <= 0) {
+      // Check if we have pending bets in this market
+      const hasPending = await this.hasPendingBetsInMarket(market.id);
+      if (hasPending) {
+        this.logger.info('Market closed. Waiting for resolution...');
+        await this.waitForMarketToResolve(market.id);
+        this.currentMarket = null;
+        return;
+      }
+      // No bets placed and market closed - find new market
+      this.currentMarket = null;
+      return;
+    }
+    
     this.logger.info(`Closes at: ${closeTimeStr} (${config.timezone}) — ${Math.floor(timeToClose / 60000)}m left`);
     this.logger.info(`Min bet: ${market.minimumBet || '0.1'} CC`);
 
