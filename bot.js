@@ -83,7 +83,7 @@ class QuestBot {
     const market = await this.findBestMarket();
 
     if (!market) {
-      this.logger.info('No 1-hour market available. Waiting 60s...');
+      this.logger.info(colorize('No 1-hour market available. Waiting 60s...', 'yellow'));
       await this.sleep(60000);
       return;
     }
@@ -134,7 +134,7 @@ class QuestBot {
     this.logger.info(`Balance: ${colorize(availableBalance.toFixed(2) + ' CC', 'green')}`);
 
     if (availableBalance < minBet) {
-      this.logger.warn('Low balance! Waiting for bets to resolve...');
+      this.logger.warn(colorize('Low balance! Waiting for bets to resolve...', 'yellow'));
       await this.waitForBetsToResolve();
       return;
     }
@@ -225,7 +225,7 @@ class QuestBot {
           const poolOk = totalPool >= config.betting.minPoolSize;
           
           if (majorityOk && poolOk) {
-            this.logger.info(`Found favorable market: ${m.question}`);
+            this.logger.info(colorize(`Found favorable market: ${m.question}`, 'green'));
             this.logger.info(`Majority: ${colorize((maxProb * 100).toFixed(0) + '%', 'green')} | Pool: ${colorize(totalPool.toFixed(0) + ' CC', 'green')}`);
             return m;
           }
@@ -236,7 +236,7 @@ class QuestBot {
       }
 
       // No favorable market found - return null to trigger wait and retry
-      this.logger.info('No favorable market found. Waiting for better conditions...');
+      this.logger.info(colorize('No favorable market found. Waiting for better conditions...', 'yellow'));
       return null;
 
     } catch (err) {
