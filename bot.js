@@ -466,8 +466,10 @@ class QuestBot {
 
   async hasPendingBetsInMarket(marketId) {
     try {
-      const bets = await this.api.listBets({ status: 'PENDING', marketId, limit: 1 });
-      return bets.bets && bets.bets.length > 0;
+      // Check both PENDING and CONFIRMED bets
+      const pending = await this.api.listBets({ status: 'PENDING', marketId, limit: 1 });
+      const confirmed = await this.api.listBets({ status: 'CONFIRMED', marketId, limit: 1 });
+      return (pending.bets?.length > 0) || (confirmed.bets?.length > 0);
     } catch {
       return false;
     }
