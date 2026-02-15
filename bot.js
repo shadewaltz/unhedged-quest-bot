@@ -286,15 +286,15 @@ class QuestBot {
   }
 
   async waitForMarketToResolve(marketId) {
-    this.logger.info('Waiting for market to resolve (checking every 30s)...');
+    this.logger.info('Waiting for market to resolve...');
+    let lastStatus = null;
 
     while (this.isRunning) {
       try {
         const response = await this.api.getMarket(marketId);
-        const market = response.market || response; // Handle wrapped response
+        const market = response.market || response;
 
         if (!market || !market.status) {
-          this.logger.info(`Market data incomplete, retrying...`);
           await this.sleep(5000);
           continue;
         }
@@ -304,7 +304,11 @@ class QuestBot {
           return;
         }
 
-        this.logger.info(`Market status: ${market.status}, waiting...`);
+        // Only log if status changed (not every check)
+        if (market.status !== lastStatus) {
+          this.logger.info(`Market status: ${market.status}`);
+          lastStatus = market.status;
+        }
       } catch (err) {
         this.logger.error('Error checking market:', err.message);
       }
