@@ -100,6 +100,11 @@ export const config = {
   dryRun: cliArgs.dryRun
 };
 
+// Debug: log loaded config
+if (cliArgs.configFile) {
+  console.log(`Config loaded: majorityWeight=${config.betting.majorityWeight}, priceDeltaWeight=${config.betting.priceDeltaWeight}`);
+}
+
 // Validate config
 if (!config.apiKey) {
   console.error('UNHEDGED_API_KEY environment variable required');
