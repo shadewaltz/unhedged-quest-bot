@@ -282,11 +282,12 @@ class QuestBot {
           // Check if majority meets threshold AND pool is large enough AND payout is sufficient
           const majorityOk = maxProb >= config.betting.majorityThreshold;
           const poolOk = totalPool >= config.betting.minPoolSize;
-          const payoutOk = config.betting.minPayoutThreshold === 0 || (estimatedPayout * betAmount) >= config.betting.minPayoutThreshold;
+          const expectedProfit = (estimatedPayout - 1) * betAmount;
+          const payoutOk = config.betting.minPayoutThreshold === 0 || expectedProfit >= config.betting.minPayoutThreshold;
 
           if (majorityOk && poolOk && payoutOk) {
             this.logger.info(colorize(`Found favorable market: ${m.question}`, 'green'));
-            this.logger.info(`Majority: ${colorize((maxProb * 100).toFixed(0) + '%', 'green')} | Pool: ${colorize(totalPool.toFixed(0) + ' CC', 'green')} | Payout: ${colorize((estimatedPayout * betAmount).toFixed(2) + ' CC', 'green')} (${estimatedPayout.toFixed(2)}x)`);
+            this.logger.info(`Majority: ${colorize((maxProb * 100).toFixed(0) + '%', 'green')} | Pool: ${colorize(totalPool.toFixed(0) + ' CC', 'green')} | Payout: ${colorize(expectedProfit.toFixed(2) + ' CC', 'green')} (${estimatedPayout.toFixed(2)}x)`);
             return m;
           }
         } catch {
@@ -367,13 +368,14 @@ class QuestBot {
 
       const majorityOk = maxProb >= config.betting.majorityThreshold;
       const poolOk = totalPool >= config.betting.minPoolSize;
-      const payoutOk = config.betting.minPayoutThreshold === 0 || (estimatedPayout * betAmount) >= config.betting.minPayoutThreshold;
+      const expectedProfit = (estimatedPayout - 1) * betAmount;
+      const payoutOk = config.betting.minPayoutThreshold === 0 || expectedProfit >= config.betting.minPayoutThreshold;
 
       if (!majorityOk || !poolOk || !payoutOk) {
         const reasons = [];
         if (!majorityOk) reasons.push(`${(maxProb * 100).toFixed(0)}% majority (need ${(config.betting.majorityThreshold * 100).toFixed(0)}%)`);
         if (!poolOk) reasons.push(`${totalPool.toFixed(0)} CC pool (need ${config.betting.minPoolSize})`);
-        if (!payoutOk) reasons.push(`${(estimatedPayout * betAmount).toFixed(2)} CC payout (need ${config.betting.minPayoutThreshold} CC)`);
+        if (!payoutOk) reasons.push(`${expectedProfit.toFixed(2)} CC payout (need ${config.betting.minPayoutThreshold} CC)`);
         this.logger.info(`Market unfavorable: ${colorize(reasons.join(', '), 'yellow')} — will skip all bets`);
       }
     } catch {
