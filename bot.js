@@ -105,10 +105,19 @@ class QuestBot {
   }
 
   async cycle() {
+    // Get balance early for accurate payout estimation
+    let availableBalance = 0;
+    try {
+      const balance = await this.api.getBalance();
+      availableBalance = parseFloat(balance.balance?.available || '0');
+    } catch (err) {
+      this.logger.debug('Could not fetch balance:', err.message);
+    }
+
     // Step 1: Find the best 1-hour binary market (if we don't have one)
     if (!this.currentMarket) {
       this.logger.info('Finding best 1-hour binary market...');
-      this.currentMarket = await this.findBestMarket();
+      this.currentMarket = await this.findBestMarket(availableBalance);
 
       if (!this.currentMarket) {
         this.logger.info(colorize('No suitable market found. Waiting 60s...', 'yellow'));
@@ -170,14 +179,13 @@ class QuestBot {
       }
     }
 
-    // Step 2: Check balance
-    const balance = await this.api.getBalance();
-    const availableBalance = parseFloat(balance.balance?.available || '0');
+    // Step 2: Display info and check if we should wait
+    const balance = availableBalance; // Use the balance we already fetched
     const minBet = parseFloat(market.minimumBet || '0.1');
 
-    this.logger.info(`Balance: ${colorize(availableBalance.toFixed(2) + ' CC', 'green')}`);
+    this.logger.info(`Balance: ${colorize(balance.toFixed(2) + ' CC', 'green')}`);
 
-    if (availableBalance < minBet) {
+    if (balance < minBet) {
       this.logger.warn(colorize('Low balance! Waiting for bets to resolve...', 'yellow'));
       await this.waitForBetsToResolve();
       return;
@@ -202,7 +210,7 @@ class QuestBot {
     this.currentMarket = null;
   }
 
-  async findBestMarket() {
+  async findBestMarket(availableBalance = 0) {
     // Search for all active 1-hour binary markets
     try {
       const markets = await this.api.listMarkets({
@@ -255,16 +263,30 @@ class QuestBot {
           const prob1 = outcomeStats[1]?.impliedProbability || 0;
           const maxProb = Math.max(prob0, prob1);
           const totalPool = parseFloat(stats?.stats?.totalPool || '0');
-          const estimatedPayout = maxProb > 0 ? 1 / maxProb : 0;
+
+          // Improved payout estimation accounting for dilution
+          const pool0 = parseFloat(outcomeStats[0]?.totalAmount || '0');
+          const pool1 = parseFloat(outcomeStats[1]?.totalAmount || '0');
+          const outcomePool = prob0 > prob1 ? pool0 : pool1;
+          const minBet = parseFloat(m.minimumBet || '0.1');
+          const betAmount = config.betting.useAllBalance ? (availableBalance || minBet) : minBet;
+
+          let estimatedPayout = (totalPool + betAmount) / (outcomePool + betAmount);
+
+          // Apply fee
+          const feeRate = parseFloat(m.platformFeeRate || '0');
+          if (feeRate > 0) {
+            estimatedPayout *= (1 - feeRate);
+          }
 
           // Check if majority meets threshold AND pool is large enough AND payout is sufficient
           const majorityOk = maxProb >= config.betting.majorityThreshold;
           const poolOk = totalPool >= config.betting.minPoolSize;
-          const payoutOk = config.betting.minPayoutThreshold === 0 || estimatedPayout >= config.betting.minPayoutThreshold;
+          const payoutOk = config.betting.minPayoutThreshold === 0 || (estimatedPayout * betAmount) >= config.betting.minPayoutThreshold;
 
           if (majorityOk && poolOk && payoutOk) {
             this.logger.info(colorize(`Found favorable market: ${m.question}`, 'green'));
-            this.logger.info(`Majority: ${colorize((maxProb * 100).toFixed(0) + '%', 'green')} | Pool: ${colorize(totalPool.toFixed(0) + ' CC', 'green')} | Payout: ${colorize(estimatedPayout.toFixed(2) + 'x', 'green')}`);
+            this.logger.info(`Majority: ${colorize((maxProb * 100).toFixed(0) + '%', 'green')} | Pool: ${colorize(totalPool.toFixed(0) + ' CC', 'green')} | Payout: ${colorize((estimatedPayout * betAmount).toFixed(2) + ' CC', 'green')} (${estimatedPayout.toFixed(2)}x)`);
             return m;
           }
         } catch {
@@ -328,17 +350,30 @@ class QuestBot {
       const prob1 = outcomeStats[1]?.impliedProbability || 0;
       const maxProb = Math.max(prob0, prob1);
       const totalPool = parseFloat(stats?.stats?.totalPool || '0');
-      const estimatedPayout = maxProb > 0 ? 1 / maxProb : 0;
+
+      // Improved payout estimation accounting for dilution
+      const pool0 = parseFloat(outcomeStats[0]?.totalAmount || '0');
+      const pool1 = parseFloat(outcomeStats[1]?.totalAmount || '0');
+      const outcomePool = prob0 > prob1 ? pool0 : pool1;
+      const betAmount = config.betting.useAllBalance ? availableBalance : minBet;
+
+      let estimatedPayout = (totalPool + betAmount) / (outcomePool + betAmount);
+
+      // Apply fee
+      const feeRate = parseFloat(market.platformFeeRate || '0');
+      if (feeRate > 0) {
+        estimatedPayout *= (1 - feeRate);
+      }
 
       const majorityOk = maxProb >= config.betting.majorityThreshold;
       const poolOk = totalPool >= config.betting.minPoolSize;
-      const payoutOk = config.betting.minPayoutThreshold === 0 || estimatedPayout >= config.betting.minPayoutThreshold;
+      const payoutOk = config.betting.minPayoutThreshold === 0 || (estimatedPayout * betAmount) >= config.betting.minPayoutThreshold;
 
       if (!majorityOk || !poolOk || !payoutOk) {
         const reasons = [];
         if (!majorityOk) reasons.push(`${(maxProb * 100).toFixed(0)}% majority (need ${(config.betting.majorityThreshold * 100).toFixed(0)}%)`);
         if (!poolOk) reasons.push(`${totalPool.toFixed(0)} CC pool (need ${config.betting.minPoolSize})`);
-        if (!payoutOk) reasons.push(`${estimatedPayout.toFixed(2)}x payout (need ${config.betting.minPayoutThreshold})`);
+        if (!payoutOk) reasons.push(`${(estimatedPayout * betAmount).toFixed(2)} CC payout (need ${config.betting.minPayoutThreshold} CC)`);
         this.logger.info(`Market unfavorable: ${colorize(reasons.join(', '), 'yellow')} — will skip all bets`);
       }
     } catch {

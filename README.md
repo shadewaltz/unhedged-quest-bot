@@ -111,7 +111,7 @@ See `config.example.json` for all options:
 | `timezone`                          | Asia/Jakarta | Display timezone                 |
 | `betting.windowMinutes`             | 10           | Start betting X min before close |
 | `betting.majorityThreshold`         | 0.90         | Min majority % to bet            |
-| `betting.minPayoutThreshold`        | 0            | Min payout multiplier (e.g. 1.2) |
+| `betting.minPayoutThreshold`        | 0            | Min payout in CC (e.g. 10.5)     |
 | `betting.minPoolSize`               | 3000         | Min pool size in CC              |
 | `betting.priceUncertaintyThreshold` | 0.001        | Skip if price within X%          |
 | `betting.cooldownMs`                | 2500         | Delay between bets               |
@@ -125,11 +125,16 @@ The bot combines two signals:
 1. **Majority** (60% weight) — crowd wisdom
 2. **Price delta** (40% weight) — current vs target price
 
+Payout estimation is calculated using a pari-mutuel formula that accounts for your bet size (dilution) and platform
+fees:
+`payout_multiplier = (Total Pool + Your Bet) / (Outcome Pool + Your Bet) * (1 - Platform Fee)`
+`total_payout_cc = Your Bet * payout_multiplier`
+
 Only bets when:
 
 - Majority >= threshold (default 90%)
 - Pool size >= min (default 3000 CC)
-- Payout >= min threshold (default 0 - disabled)
+- Payout (in CC) >= min threshold (default 0 - disabled)
 - Price delta > uncertainty threshold
 
 ## Safety Features
