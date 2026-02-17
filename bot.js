@@ -1,13 +1,13 @@
-import { config } from './config.js';
-import { UnhedgedAPI } from './api.js';
-import { Strategy } from './strategy.js';
-import { Logger, colorize } from './logger.js';
+import {config} from './lib/config.js';
+import {UnhedgedAPI} from './lib/api.js';
+import {Strategy} from './lib/strategy.js';
+import {Logger, colorize} from './lib/logger.js';
 
 class QuestBot {
   constructor() {
-    this.api = new UnhedgedAPI(config.apiKey, { 
+    this.api = new UnhedgedAPI(config.apiKey, {
       rateLimit: config.rateLimit,
-      serverErrorRetry: config.serverErrorRetry 
+      serverErrorRetry: config.serverErrorRetry
     });
     this.strategy = new Strategy(config);
     this.logger = new Logger();
@@ -16,22 +16,20 @@ class QuestBot {
     this.betsInWindow = [];
     this.currentMarket = null;
     this.totalBetsPlaced = 0; // Track total bets across all markets
-    this.maxTotalBets = config.betting.maxTotalBets || null;
+    this.maxTotalBets = config.betting.maxTotalBets
   }
 
   async init() {
     this.logger.info('Unhedged Quest Bot initializing...');
     this.logger.info(`Mode: ${this.dryRun ? 'DRY RUN' : 'LIVE TRADING'}`);
-    if (this.maxTotalBets) {
-      this.logger.info(`Max bets limit: ${this.maxTotalBets}`);
-    }
+    this.maxTotalBets && this.logger.info(`Max bets limit: ${this.maxTotalBets}`);
     this.logger.info(`Price threshold: ${colorize((config.betting.priceUncertaintyThreshold * 100).toFixed(2) + '%', 'cyan')}`);
     this.logger.info(`Majority threshold: ${colorize((config.betting.majorityThreshold * 100).toFixed(0) + '%', 'cyan')}`);
     this.logger.info(`Min pool size: ${colorize(config.betting.minPoolSize + ' CC', 'cyan')}`);
-    
+
     // Check for existing pending bets and resume tracking
     await this.checkPendingBets();
-    
+
     // Show achievement progress
     await this.showAchievementProgress();
   }
@@ -39,21 +37,21 @@ class QuestBot {
   async checkPendingBets() {
     try {
       // Check for both PENDING and CONFIRMED bets (waiting for resolution)
-      const pendingBets = await this.api.listBets({ status: 'PENDING', limit: 10 });
-      const confirmedBets = await this.api.listBets({ status: 'CONFIRMED', limit: 10 });
-      
-      const allBets = [...(pendingBets.bets || []), ...(confirmedBets.bets || [])];
-      
+      const pendingBets = await this.api.listBets({status: 'PENDING', limit: 10});
+      const confirmedBets = await this.api.listBets({status: 'CONFIRMED', limit: 10});
+
+      const allBets = [...(pendingBets.bets), ...(confirmedBets.bets)];
+
       if (allBets.length > 0) {
         const bet = allBets[0];
-        
+
         // Get market details
         const market = await this.api.getMarket(bet.marketId);
         this.currentMarket = market.market || market;
-        
+
         this.logger.info(colorize(`Resuming: ${this.currentMarket.question}`, 'green'));
       }
-    } catch (err) {
+    } catch {
       // Silently continue if can't check
     }
   }
@@ -61,20 +59,20 @@ class QuestBot {
   async showAchievementProgress() {
     try {
       const progress = await this.api.getAchievementProgress();
-      
+
       if (!progress.progress || progress.progress.length === 0) {
         return;
       }
-      
+
       const quest = progress.progress[0];
       const achievement = quest.achievement;
       const currentStep = achievement.steps.find(s => s.stepNumber === quest.completedStep + 1);
-      
+
       this.logger.info(`Achievement: ${achievement.name}: Step ${quest.completedStep}/5 complete`);
       const pctBets = Math.round((quest.currentBets / 750) * 100);
       const pctVol = Math.round((parseFloat(quest.currentVolume) / 2000) * 100);
       this.logger.info(`Progress: ${quest.currentBets} bets ${colorize('(' + pctBets + '%)', 'cyan')} / ${quest.currentVolume} CC ${colorize('(' + pctVol + '%)', 'cyan')}`);
-      
+
       if (currentStep) {
         const betsNeeded = currentStep.requiredBets - quest.currentBets;
         const volumeNeeded = parseFloat(currentStep.requiredVolume) - parseFloat(quest.currentVolume);
@@ -118,7 +116,7 @@ class QuestBot {
     const market = this.currentMarket;
 
     this.logger.info('Market: ' + market.question);
-    
+
     // Format time in configured timezone
     const closeTimeStr = new Date(market.endTime).toLocaleString('en-US', {
       timeZone: config.timezone,
@@ -129,12 +127,12 @@ class QuestBot {
       hour: '2-digit',
       minute: '2-digit'
     });
-    
+
     // Calculate time left
     const now = new Date();
     const endTime = new Date(market.endTime);
     const timeToClose = endTime - now;
-    
+
     // If market already closed and we have pending bets, just wait quietly
     if (timeToClose <= 0) {
       // Check if we have pending bets in this market
@@ -149,7 +147,7 @@ class QuestBot {
       this.currentMarket = null;
       return;
     }
-    
+
     this.logger.info(`Closes at: ${closeTimeStr} (${config.timezone}) — ${Math.floor(timeToClose / 60000)}m left`);
     this.logger.info(`Min bet: ${market.minimumBet || '0.1'} CC`);
 
@@ -159,7 +157,7 @@ class QuestBot {
       const priceMatch = market.question.match(/\$?([\d,]+(?:\.\d+)?)/);
       const targetPrice = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : null;
       const currentPrice = await this.getCurrentPrice(asset);
-      
+
       if (targetPrice && currentPrice) {
         const delta = ((currentPrice - targetPrice) / targetPrice * 100).toFixed(2);
         const sign = delta >= 0 ? '+' : '';
@@ -217,16 +215,16 @@ class QuestBot {
       // We detect by checking endTime is within reasonable range
       const oneHourMarkets = [];
       const now = new Date();
-      
+
       for (const m of markets.markets) {
         const question = m.question?.toLowerCase() || '';
         const isBinary = question.includes('above') || question.includes('below');
-        
+
         // Check if it's roughly 1-hour duration (closes within 90 minutes)
         const endTime = new Date(m.endTime);
         const timeToClose = endTime - now;
         const isShortTerm = timeToClose > 0 && timeToClose <= 90 * 60 * 1000; // 90 min max
-        
+
         if (isBinary && isShortTerm) {
           oneHourMarkets.push(m);
         }
@@ -239,14 +237,7 @@ class QuestBot {
       // Sort by end time (soonest first)
       oneHourMarkets.sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
 
-      // Check each market for favorable conditions
-      const windowMs = config.betting.windowMinutes * 60 * 1000;
-      
       for (const m of oneHourMarkets) {
-        const endTime = new Date(m.endTime);
-        const timeToClose = endTime - now;
-        
-        // Skip if market already closed (status check is more reliable than time)
         // Markets should be ACTIVE to consider
         if (m.status !== 'ACTIVE') {
           continue;
@@ -260,17 +251,17 @@ class QuestBot {
           const prob1 = outcomeStats[1]?.impliedProbability || 0;
           const maxProb = Math.max(prob0, prob1);
           const totalPool = parseFloat(stats?.stats?.totalPool || '0');
-          
+
           // Check if majority meets threshold AND pool is large enough
           const majorityOk = maxProb >= config.betting.majorityThreshold;
           const poolOk = totalPool >= config.betting.minPoolSize;
-          
+
           if (majorityOk && poolOk) {
             this.logger.info(colorize(`Found favorable market: ${m.question}`, 'green'));
             this.logger.info(`Majority: ${colorize((maxProb * 100).toFixed(0) + '%', 'green')} | Pool: ${colorize(totalPool.toFixed(0) + ' CC', 'green')}`);
             return m;
           }
-        } catch (err) {
+        } catch {
           // Skip if can't get stats
           continue;
         }
@@ -322,7 +313,7 @@ class QuestBot {
     const endTime = new Date(market.endTime);
 
     this.logger.info('ENTERING BETTING WINDOW - SPAM MODE ACTIVATED');
-    
+
     // Check if market is favorable at start of window
     try {
       const stats = await this.api.getMarketStats(market.id);
@@ -331,20 +322,20 @@ class QuestBot {
       const prob1 = outcomeStats[1]?.impliedProbability || 0;
       const maxProb = Math.max(prob0, prob1);
       const totalPool = parseFloat(stats?.stats?.totalPool || '0');
-      
+
       const majorityOk = maxProb >= config.betting.majorityThreshold;
       const poolOk = totalPool >= config.betting.minPoolSize;
-      
+
       if (!majorityOk || !poolOk) {
         const reasons = [];
         if (!majorityOk) reasons.push(`${(maxProb * 100).toFixed(0)}% majority (need ${(config.betting.majorityThreshold * 100).toFixed(0)}%)`);
         if (!poolOk) reasons.push(`${totalPool.toFixed(0)} CC pool (need ${config.betting.minPoolSize})`);
         this.logger.info(`Market unfavorable: ${colorize(reasons.join(', '), 'yellow')} — will skip all bets`);
       }
-    } catch (err) {
+    } catch {
       // Silently continue if can't check
     }
-    
+
     // Check if we've reached max bets limit
     if (this.maxTotalBets && this.totalBetsPlaced >= this.maxTotalBets) {
       this.logger.info(`Reached max bets limit (${this.maxTotalBets}). Stopping.`);
@@ -379,7 +370,7 @@ class QuestBot {
       const remainingRequests = await this.getRemainingRequests();
       if (remainingRequests < 2) {
         this.logger.info('Rate limit buffer, waiting...');
-        await this.sleep(2000);
+        await this.sleep(config.rateLimit.retryAfterMs);
         continue;
       }
 
@@ -387,7 +378,7 @@ class QuestBot {
       let stats, currentPrice;
       try {
         stats = await this.api.getMarketStats(market.id);
-        
+
         // Get current price for the correct asset (only log once per market)
         const asset = this.parseAssetFromQuestion(market.question);
         if (!asset) {
@@ -412,7 +403,7 @@ class QuestBot {
           this.logger.info('Market closed while deciding, skipping bet');
           break;
         }
-        
+
         await this.placeBet(market, decision);
         availableBalance -= minBet; // Deduct locally for tracking
 
@@ -432,7 +423,7 @@ class QuestBot {
   async placeBet(market, decision) {
     const idempotencyKey = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const marketId = market.id;
-    
+
     // Get outcome label (YES/NO)
     const outcomeLabel = market.outcomes?.[decision.outcomeIndex]?.label || `outcome ${decision.outcomeIndex}`;
 
@@ -449,7 +440,7 @@ class QuestBot {
     this.cleanupBetTimestamps();
 
     try {
-      const result = await this.api.placeBet({
+      await this.api.placeBet({
         marketId,
         outcomeIndex: decision.outcomeIndex,
         amount: decision.amount,
@@ -458,7 +449,7 @@ class QuestBot {
 
       this.logger.success(colorize(`Bet placed: ${decision.amount} CC on ${outcomeLabel}`, 'green'));
       this.totalBetsPlaced++;
-      
+
       if (this.maxTotalBets) {
         this.logger.info(`Progress: ${this.totalBetsPlaced}/${this.maxTotalBets} bets`);
       }
@@ -471,8 +462,8 @@ class QuestBot {
   async hasPendingBetsInMarket(marketId) {
     try {
       // Check both PENDING and CONFIRMED bets
-      const pending = await this.api.listBets({ status: 'PENDING', marketId, limit: 1 });
-      const confirmed = await this.api.listBets({ status: 'CONFIRMED', marketId, limit: 1 });
+      const pending = await this.api.listBets({status: 'PENDING', marketId, limit: 1});
+      const confirmed = await this.api.listBets({status: 'CONFIRMED', marketId, limit: 1});
       return (pending.bets?.length > 0) || (confirmed.bets?.length > 0);
     } catch {
       return false;
@@ -485,7 +476,7 @@ class QuestBot {
     while (this.isRunning) {
       // Check if we have any pending bets at all
       try {
-        const bets = await this.api.listBets({ status: 'PENDING', limit: 1 });
+        const bets = await this.api.listBets({status: 'PENDING', limit: 1});
 
         if (!bets.bets || bets.bets.length === 0) {
           this.logger.info('All bets resolved!');
@@ -504,17 +495,17 @@ class QuestBot {
   async getRemainingRequests() {
     this.cleanupBetTimestamps();
     const requestsMade = this.betsInWindow.length + (this.api._requestTimestamps?.length || 0);
-    return 30 - requestsMade;
+    return config.rateLimit.maxRequestsPerMinute - requestsMade;
   }
 
   parseAssetFromQuestion(question) {
     const lower = question.toLowerCase();
-    
+
     if (lower.includes('bitcoin') || lower.includes('btc')) return 'BTC';
     if (lower.includes('ethereum') || lower.includes('eth')) return 'ETH';
     if (lower.includes('solana') || lower.includes('sol')) return 'SOL';
     if (lower.includes('canton coin')) return 'CC'; // Now supported!
-    
+
     // Default to BTC if can't determine
     return 'BTC';
   }
@@ -530,7 +521,7 @@ class QuestBot {
       this.logger.error('CMC_API_KEY not set. Cannot fetch price.');
       return null;
     }
-    
+
     try {
       const response = await fetch(
         `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${asset}`,
@@ -541,18 +532,18 @@ class QuestBot {
           }
         }
       );
-      
+
       if (!response.ok) {
         throw new Error(`CMC API error: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const price = data.data?.[asset]?.quote?.USD?.price;
-      
+
       if (!price || isNaN(price)) {
         throw new Error(`Invalid CMC price for ${asset}`);
       }
-      
+
       return price;
     } catch (err) {
       this.logger.error(`Failed to fetch ${asset} price from CMC:`, err.message);
