@@ -10,6 +10,7 @@ const defaultConfig = {
     majorityWeight: 0.6,
     priceDeltaWeight: 0.4,
     majorityThreshold: 0.90,
+    minPayoutThreshold: 0,
     minPoolSize: 3000,
     priceUncertaintyThreshold: 0.01,
     cooldownMs: 2500,

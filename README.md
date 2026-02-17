@@ -9,7 +9,7 @@ through smart outcome selection.
 - **Custom per-account configs** — Different strategies per account
 - **Proxy support** — Use different IPs for each account
 - **Auto market selection** — Finds best 1-hour binary markets
-- **Smart betting strategy** — Follows majority + price analysis
+- **Smart betting strategy** — Follows majority + price + payout analysis
 - **Achievement tracking** — Tracks quest progress automatically
 
 ## Quick Start
@@ -110,7 +110,8 @@ See `config.example.json` for all options:
 |-------------------------------------|--------------|----------------------------------|
 | `timezone`                          | Asia/Jakarta | Display timezone                 |
 | `betting.windowMinutes`             | 10           | Start betting X min before close |
-| `betting.majorityThreshold`         | 0.80         | Min majority % to bet            |
+| `betting.majorityThreshold`         | 0.90         | Min majority % to bet            |
+| `betting.minPayoutThreshold`        | 0            | Min payout multiplier (e.g. 1.2) |
 | `betting.minPoolSize`               | 3000         | Min pool size in CC              |
 | `betting.priceUncertaintyThreshold` | 0.001        | Skip if price within X%          |
 | `betting.cooldownMs`                | 2500         | Delay between bets               |
@@ -126,8 +127,9 @@ The bot combines two signals:
 
 Only bets when:
 
-- Majority >= threshold (default 80%)
+- Majority >= threshold (default 90%)
 - Pool size >= min (default 3000 CC)
+- Payout >= min threshold (default 0 - disabled)
 - Price delta > uncertainty threshold
 
 ## Safety Features
