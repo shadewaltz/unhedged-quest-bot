@@ -1,4 +1,4 @@
-import {parseCliArgs, deepMerge, validateConfig, loadJsonFile} from './utils.js';
+import {parseCliArgs, deepMerge, validateConfig, loadJsonFile} from './lib/utils.js';
 
 const cliArgs = parseCliArgs();
 

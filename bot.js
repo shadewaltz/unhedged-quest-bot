@@ -1,4 +1,4 @@
-import {config} from './lib/config.js';
+import {config} from './config.js';
 import {UnhedgedAPI} from './lib/api.js';
 import {Strategy} from './lib/strategy.js';
 import {Logger, colorize} from './lib/logger.js';
