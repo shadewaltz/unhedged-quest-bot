@@ -1,6 +1,7 @@
 # Unhedged Quest Bot
 
-Automated betting bot for Unhedged prediction markets. Designed to complete quest milestones while minimizing losses through smart outcome selection.
+Automated betting bot for Unhedged prediction markets. Designed to complete quest milestones while minimizing losses
+through smart outcome selection.
 
 ## Features
 
@@ -70,71 +71,61 @@ mkdir config
 ### 3. Run multiple accounts (different terminals)
 
 ```bash
-# Terminal 1 - Account 1 with proxy 1
-bun run bot.js -u UNHEDGED_ACCOUNT1 -p PROXY_1 -f config/account1.json
+# Terminal 1 - Account 1
+bun run bot.js -u UNHEDGED_ACCOUNT1 -f config/account1.json
 
-# Terminal 2 - Account 2 with proxy 2
-bun run bot.js -u UNHEDGED_ACCOUNT2 -p PROXY_2 -f config/account2.json
+# Terminal 2 - Account 2
+bun run bot.js -u UNHEDGED_ACCOUNT2 -f config/account2.json
 
-# Terminal 3 - Account 3 with proxy 3
-bun run bot.js -u UNHEDGED_ACCOUNT3 -p PROXY_3 -f config/account3.json
+# Terminal 3 - Account 3
+bun run bot.js -u UNHEDGED_ACCOUNT3 -f config/account3.json
 ```
 
 ## CLI Flags
 
-| Flag | Description |
-|------|-------------|
+| Flag             | Description                       |
+|------------------|-----------------------------------|
 | `-u, --unhedged` | Env var name for Unhedged API key |
-| `-c, --cmc` | Env var name for CMC API key |
-| `-p, --proxy` | Env var name for proxy URL |
-| `-f, --config` | Path to custom config JSON |
-| `--dry-run` | Simulate without placing bets |
+| `-c, --cmc`      | Env var name for CMC API key      |
+| `-f, --config`   | Path to custom config JSON        |
+| `--dry-run`      | Simulate without placing bets     |
 
 ## Proxy Support
 
-Bun doesn't have native proxy support in `fetch()`. Use one of these methods:
+The bot supports multiple proxies for better rate limit avoidance. Create a `proxies.txt` file in the root directory and
+add one proxy per line:
 
-### Option 1: Environment variables (system-wide)
-```bash
-export HTTP_PROXY=http://proxy:port
-export HTTPS_PROXY=http://proxy:port
-bun run bot.js
+```text
+http://user:pass@proxy1:port
+http://user:pass@proxy2:port
 ```
 
-### Option 2: Proxychains
-```bash
-proxychains bun run bot.js
-```
-
-### Option 3: Config file (for documentation)
-Add to your config JSON:
-```json
-{
-  "proxy": "http://user:pass@proxy:port"
-}
-```
+The bot rotates to a different proxy for every API request.
 
 ## Configuration Options
 
 See `config.example.json` for all options:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `timezone` | Asia/Jakarta | Display timezone |
-| `betting.windowMinutes` | 10 | Start betting X min before close |
-| `betting.majorityThreshold` | 0.80 | Min majority % to bet |
-| `betting.minPoolSize` | 3000 | Min pool size in CC |
-| `betting.priceUncertaintyThreshold` | 0.001 | Skip if price within X% |
-| `betting.cooldownMs` | 2500 | Delay between bets |
-| `betting.maxTotalBets` | null | Stop after N bets |
+| Setting                             | Default      | Description                      |
+|-------------------------------------|--------------|----------------------------------|
+| `timezone`                          | Asia/Jakarta | Display timezone                 |
+| `betting.windowMinutes`             | 10           | Start betting X min before close |
+| `betting.majorityThreshold`         | 0.80         | Min majority % to bet            |
+| `betting.minPoolSize`               | 3000         | Min pool size in CC              |
+| `betting.priceUncertaintyThreshold` | 0.001        | Skip if price within X%          |
+| `betting.cooldownMs`                | 2500         | Delay between bets               |
+| `betting.maxTotalBets`              | null         | Stop after N bets                |
+| `betting.useAllBalance`             | false        | Use entire balance for each bet  |
 
 ## Strategy
 
 The bot combines two signals:
+
 1. **Majority** (60% weight) — crowd wisdom
 2. **Price delta** (40% weight) — current vs target price
 
 Only bets when:
+
 - Majority >= threshold (default 80%)
 - Pool size >= min (default 3000 CC)
 - Price delta > uncertainty threshold

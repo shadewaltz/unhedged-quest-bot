@@ -7,7 +7,8 @@ class QuestBot {
   constructor() {
     this.api = new UnhedgedAPI(config.apiKey, {
       rateLimit: config.rateLimit,
-      serverErrorRetry: config.serverErrorRetry
+      serverErrorRetry: config.serverErrorRetry,
+      proxies: config.proxies
     });
     this.strategy = new Strategy(config);
     this.logger = new Logger();
@@ -22,6 +23,9 @@ class QuestBot {
   async init() {
     this.logger.info('Unhedged Quest Bot initializing...');
     this.logger.info(`Mode: ${this.dryRun ? 'DRY RUN' : 'LIVE TRADING'}`);
+    if (config.proxies?.length > 0) {
+      this.logger.info(`Proxies: ${colorize(config.proxies.length, 'cyan')} loaded`);
+    }
     this.maxTotalBets && this.logger.info(`Max bets limit: ${this.maxTotalBets}`);
     this.logger.info(`Price threshold: ${colorize((config.betting.priceUncertaintyThreshold * 100).toFixed(2) + '%', 'cyan')}`);
     this.logger.info(`Majority threshold: ${colorize((config.betting.majorityThreshold * 100).toFixed(0) + '%', 'cyan')}`);
@@ -405,7 +409,7 @@ class QuestBot {
         }
 
         await this.placeBet(market, decision);
-        availableBalance -= minBet; // Deduct locally for tracking
+        availableBalance -= decision.amount; // Deduct locally for tracking
 
         // Update progress every 10 bets
         if ((this.betsInWindow.length % 10) === 0) {

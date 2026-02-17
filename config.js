@@ -13,7 +13,8 @@ const defaultConfig = {
     minPoolSize: 3000,
     priceUncertaintyThreshold: 0.01,
     cooldownMs: 2500,
-    maxTotalBets: null
+    maxTotalBets: null,
+    useAllBalance: false
   },
   rateLimit: {
     maxRequestsPerMinute: 30,
@@ -33,11 +34,25 @@ const fileConfig = await loadJsonFile(cliArgs.configFile);
 // Merge: default <- file config <- CLI overrides
 const mergedConfig = deepMerge(deepMerge({}, defaultConfig), fileConfig);
 
+// Load proxies from proxies.txt if it exists
+const fileProxies = [];
+try {
+  const proxiesFile = Bun.file('proxies.txt');
+  if (await proxiesFile.exists()) {
+    const content = await proxiesFile.text();
+    fileProxies.push(...content.split('\n').map(line => line.trim()).filter(line => line && !line.startsWith('#')));
+    console.log(`Loaded ${fileProxies.length} proxies from proxies.txt`);
+  }
+} catch (err) {
+  // Ignore errors reading proxies.txt
+}
+
 export const config = {
   ...mergedConfig,
   apiKey: process.env[cliArgs.unhedgedKeyName],
   cmcApiKey: process.env[cliArgs.cmcKeyName],
-  dryRun: cliArgs.dryRun
+  dryRun: cliArgs.dryRun,
+  proxies: [...new Set(fileProxies)]
 };
 
 // Validate config
