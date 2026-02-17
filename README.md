@@ -106,17 +106,20 @@ The bot rotates to a different proxy for every API request.
 
 See `config.example.json` for all options:
 
-| Setting                             | Default      | Description                      |
-|-------------------------------------|--------------|----------------------------------|
-| `timezone`                          | Asia/Jakarta | Display timezone                 |
-| `betting.windowMinutes`             | 10           | Start betting X min before close |
-| `betting.majorityThreshold`         | 0.90         | Min majority % to bet            |
-| `betting.minPayoutThreshold`        | 0            | Min payout in CC (e.g. 10.5)     |
-| `betting.minPoolSize`               | 3000         | Min pool size in CC              |
-| `betting.priceUncertaintyThreshold` | 0.001        | Skip if price within X%          |
-| `betting.cooldownMs`                | 2500         | Delay between bets               |
-| `betting.maxTotalBets`              | null         | Stop after N bets                |
-| `betting.useAllBalance`             | false        | Use entire balance for each bet  |
+| Setting                                   | Default      | Description                      |
+|-------------------------------------------|--------------|----------------------------------|
+| `timezone`                                | Asia/Jakarta | Display timezone                 |
+| `betting.windowMinutes`                   | 1            | Start betting X min before close |
+| `betting.majorityThreshold`               | 0.70         | Min majority % to bet            |
+| `betting.minPayoutThreshold`              | 10           | Min payout in CC (e.g. 10.5)     |
+| `betting.minPoolSize`                     | 2000         | Min pool size in CC              |
+| `betting.priceUncertaintyThreshold`       | 0.005        | Skip if price within X%          |
+| `betting.cooldownMs`                      | 2500         | Delay between bets               |
+| `betting.marketSearchIntervalMs`          | 60000        | Interval to search for markets   |
+| `betting.marketResolutionCheckIntervalMs` | 30000        | Interval to check market result  |
+| `betting.betResolutionCheckIntervalMs`    | 60000        | Interval to check bet resolution |
+| `betting.maxTotalBets`                    | null         | Stop after N bets                |
+| `betting.useAllBalance`                   | true         | Use entire balance for each bet  |
 
 ## Strategy
 
@@ -132,10 +135,10 @@ fees:
 
 Only bets when:
 
-- Majority >= threshold (default 90%)
-- Pool size >= min (default 3000 CC)
-- Payout (in CC) >= min threshold (default 0 - disabled)
-- Price delta > uncertainty threshold
+- Majority >= threshold (default 70%)
+- Pool size >= min (default 2000 CC)
+- Payout (in CC) >= min threshold (default 10 CC)
+- Price delta > uncertainty threshold (default 0.5%)
 
 ## Safety Features
 

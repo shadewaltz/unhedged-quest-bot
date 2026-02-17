@@ -120,8 +120,8 @@ class QuestBot {
       this.currentMarket = await this.findBestMarket(availableBalance);
 
       if (!this.currentMarket) {
-        this.logger.info(colorize('No suitable market found. Waiting 60s...', 'yellow'));
-        await this.sleep(60000);
+        this.logger.info(colorize(`No suitable market found. Waiting ${config.betting.marketSearchIntervalMs / 1000}s...`, 'yellow'));
+        await this.sleep(config.betting.marketSearchIntervalMs);
         return;
       }
     }
@@ -332,7 +332,7 @@ class QuestBot {
         this.logger.error('Error checking market:', err.message);
       }
 
-      await this.sleep(30000);
+      await this.sleep(config.betting.marketResolutionCheckIntervalMs);
     }
   }
 
@@ -515,7 +515,7 @@ class QuestBot {
   }
 
   async waitForBetsToResolve() {
-    this.logger.info('Waiting for bets to resolve (checking every 60s)...');
+    this.logger.info(`Waiting for bets to resolve (checking every ${config.betting.betResolutionCheckIntervalMs / 1000}s)...`);
 
     while (this.isRunning) {
       // Check if we have any pending bets at all
@@ -532,7 +532,7 @@ class QuestBot {
         this.logger.error('Error checking bets:', err.message);
       }
 
-      await this.sleep(60000);
+      await this.sleep(config.betting.betResolutionCheckIntervalMs);
     }
   }
 

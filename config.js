@@ -6,16 +6,19 @@ const cliArgs = parseCliArgs();
 const defaultConfig = {
   timezone: 'Asia/Jakarta',
   betting: {
-    windowMinutes: 10,
+    windowMinutes: 1,
     majorityWeight: 0.6,
     priceDeltaWeight: 0.4,
-    majorityThreshold: 0.90,
-    minPayoutThreshold: 0,
-    minPoolSize: 3000,
-    priceUncertaintyThreshold: 0.01,
+    majorityThreshold: 0.70,
+    minPayoutThreshold: 10,
+    minPoolSize: 2000,
+    priceUncertaintyThreshold: 0.005,
     cooldownMs: 2500,
+    marketSearchIntervalMs: 10000,
+    marketResolutionCheckIntervalMs: 30000,
+    betResolutionCheckIntervalMs: 60000,
     maxTotalBets: null,
-    useAllBalance: false
+    useAllBalance: true
   },
   rateLimit: {
     maxRequestsPerMinute: 30,
